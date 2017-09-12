@@ -1,12 +1,19 @@
 
 #include "Espiot.h"
 #include <Arduino.h>
+#include <ArduinoJson.h>
+#include <ESP8266HTTPClient.h>
 #include <ESP8266WebServer.h>
+#include <ESP8266WiFi.h>
+#include <ESP8266httpUpdate.h>
+#include <ESP8266mDNS.h>
 #include <FS.h>
+#include <Hash.h>
+#include <PubSubClient.h>
 
 // APP
 String FIRM_VER = "1.0.0";
-String SENSOR = "RFID,DHT22"; // BMP180, HTU21, DHT11
+String SENSOR = ""; // BMP180, HTU21, DHT11
 
 int BUILTINLED = 2;
 int RELEY = 500;
@@ -67,14 +74,14 @@ void Espiot::init() {
   Serial.print(F("**Security token: "));
   Serial.println(securityToken);
 
-  apSsid = "Config_" + app_id;
-  apPass = "esp12345";
-
   startTime = millis();
   app_id = "ESP" + getMac();
   Serial.print(F("**App ID: "));
   Serial.println(app_id);
   app_id.toCharArray(deviceName, 200, 0);
+
+  apSsid = "Config_" + app_id;
+  apPass = "esp12345";
 
   connectToWiFi();
 }
@@ -137,7 +144,8 @@ void Espiot::connectToWiFi() {
         [this](char *topic, byte *payload, unsigned int length) {
           this->mqCallback(topic, payload, length);
         });
-    //mqReconnect();
+    yield();
+    mqReconnect();
   }
 }
 
@@ -217,9 +225,8 @@ bool Espiot::mqReconnect() {
     Serial.print(F(" Pub: "));
     Serial.print(mqttPublishTopic);
     Serial.print(F(", Sub: "));
-    Serial.print(mqttSuscribeTopic);
+    Serial.println(mqttSuscribeTopic);
 
-    yield();
     // Attempt to connect
     if (mqClient.connect(app_id.c_str(), mqttUser, mqttPassword)) {
       yield();
