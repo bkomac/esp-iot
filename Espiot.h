@@ -54,7 +54,7 @@ public:
   char deviceName[100];
   ESP8266WebServer server;
   WiFiClient client;
-  PubSubClient mqClient;
+  //PubSubClient mqClient;
 
   Espiot();
   void init();
