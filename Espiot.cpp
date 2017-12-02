@@ -34,6 +34,7 @@ String defaultMODE;
 String MODE = "AUTO";
 int timeOut = 5000;
 
+
 // mqtt config
 char mqttAddress[200] = "";
 int mqttPort = 1883;

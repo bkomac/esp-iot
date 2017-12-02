@@ -1,0 +1,12 @@
+{
+"name": "Espiot",
+"keywords": "esp8266, iot",
+"description": "ESP8266 IoT Library",
+"repository":
+{
+"type": "git",
+"url": "https://github.com/bkomac"
+},
+"frameworks": "arduino",
+"platforms": "espressif"
+}
