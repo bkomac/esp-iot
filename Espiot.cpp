@@ -5,8 +5,8 @@
 #include <FS.h>
 
 // APP
-String FIRM_VER = "1.0.0";
-String SENSOR = "RFID,DHT22"; // BMP180, HTU21, DHT11
+String FIRM_VER = "1.0.2";
+String SENSOR = "ESP"; // BMP180, HTU21, DHT11
 
 int BUILTINLED = 2;
 int RELEY = 500;
@@ -26,7 +26,7 @@ int apStartTime;
 long startTime;
 
 // CONF
-char deviceName[100] = "RFIDsensor";
+char deviceName[100] = "ESP";
 char essid[40] = "iottest";
 char epwd[40] = "esptest123";
 String securityToken = "";
@@ -39,8 +39,8 @@ char mqttAddress[200] = "";
 int mqttPort = 1883;
 char mqttUser[20] = "";
 char mqttPassword[20] = "";
-char mqttPublishTopic[200] = "esp/rfidSensor";
-char mqttSuscribeTopic[200] = "esp/rfidSensor";
+char mqttPublishTopic[200] = "esp";
+char mqttSuscribeTopic[200] = "esp";
 
 // REST API CONFIG
 char rest_server[40] = "";
@@ -133,12 +133,16 @@ void Espiot::connectToWiFi() {
   if (String(mqttAddress) != "") {
     Serial.print(F("Seting mqtt server and callback... "));
     mqClient.setServer(mqttAddress, mqttPort);
-    mqClient.setCallback(
+    /*mqClient.setCallback(
         [this](char *topic, byte *payload, unsigned int length) {
           this->mqCallback(topic, payload, length);
-        });
-    //mqReconnect();
+      }); */
+    mqReconnect();
   }
+}
+
+PubSubClient Espiot::getMqClient(){
+    return mqClient;
 }
 
 void Espiot::setupAP(void) {
@@ -201,8 +205,6 @@ void Espiot::mqCallback(char *topic, byte *payload, unsigned int length) {
   DynamicJsonBuffer jsonBuffer;
   JsonObject &rootMqtt = jsonBuffer.parseObject(msg);
 
-  String temp = rootMqtt["sensor"]["data"]["temp"].asString();
-  String hum = rootMqtt["sensor"]["data"]["hum"].asString();
 }
 
 bool Espiot::mqReconnect() {
@@ -260,16 +262,16 @@ void Espiot::mqPublish(String msg) {
 
 void Espiot::readFS() {
   // read configuration from FS json
-  Serial.println(F("mounting FS..."));
+  Serial.println(F("-mounting FS..."));
 
   if (SPIFFS.begin()) {
-    Serial.println(F("mounted file system"));
+    Serial.println(F("-mounted file system"));
     if (SPIFFS.exists("/config.json")) {
       // file exists, reading and loading
-      Serial.println(F("reading config.json file"));
+      Serial.println(F("-reading config.json file"));
       File configFile = SPIFFS.open("/config.json", "r");
       if (configFile) {
-        Serial.println(F("opened config.json file"));
+        Serial.println(F("-opened config.json file"));
         size_t size = configFile.size();
         // Allocate a buffer to store contents of the file.
         std::unique_ptr<char[]> buf(new char[size]);
@@ -340,7 +342,7 @@ void Espiot::readFS() {
           lightTreshold = lightTreshold1.toInt();
 
         } else {
-          Serial.println(F("failed to load json config"));
+          Serial.println(F("-failed to load json config!"));
         }
       }
     } else {
@@ -350,10 +352,10 @@ void Espiot::readFS() {
     // ssid.json
     if (SPIFFS.exists("/ssid.json")) {
       // file exists, reading and loading
-      Serial.println(F("reading ssid.json file"));
+      Serial.println(F("-reading ssid.json file"));
       File ssidFile = SPIFFS.open("/ssid.json", "r");
       if (ssidFile) {
-        Serial.println(F("opened config file"));
+        Serial.println(F("-opened ssid file"));
         size_t size = ssidFile.size();
         // Allocate a buffer to store contents of the file.
         std::unique_ptr<char[]> buf(new char[size]);
@@ -361,6 +363,7 @@ void Espiot::readFS() {
         ssidFile.readBytes(buf.get(), size);
         DynamicJsonBuffer jsonBuffer;
         JsonObject &jsonConfig = jsonBuffer.parseObject(buf.get());
+
         jsonConfig.printTo(Serial);
         if (jsonConfig.success()) {
           Serial.println(F("\nparsed ssid.json"));
@@ -922,4 +925,8 @@ String Espiot::getMac() {
     result += String(mac[i], 16);
   }
   return result;
+}
+
+String Espiot::getDeviceId() {
+  return app_id;
 }

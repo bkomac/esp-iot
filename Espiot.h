@@ -33,7 +33,7 @@ private:
   String getMac();
   void setupAP(void);
   void connectToWiFi();
-  void mqPublish(String msg);
+  //void mqPublish(String msg);
   bool mqReconnect();
   void mqCallback(char *topic, byte *payload, unsigned int length);
 
@@ -52,9 +52,16 @@ private:
 
 public:
   char deviceName[100];
+  int timeOut;
+  String securityToken;
   ESP8266WebServer server;
   WiFiClient client;
-  PubSubClient mqClient;
+  //PubSubClient mqClient;
+
+  PubSubClient getMqClient();
+  void mqPublish(String msg);
+
+  String getDeviceId();
 
   Espiot();
   void init();
