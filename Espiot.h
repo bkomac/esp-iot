@@ -54,6 +54,7 @@ public:
   char deviceName[100];
   int timeOut;
   String securityToken;
+  String appVersion;
   ESP8266WebServer server;
   WiFiClient client;
   //PubSubClient mqClient;
@@ -64,6 +65,7 @@ public:
   String getDeviceId();
 
   Espiot();
+  void init(String appVer);
   void init();
   void loop();
 

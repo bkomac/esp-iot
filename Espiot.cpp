@@ -7,6 +7,7 @@
 // APP
 String FIRM_VER = "1.0.2";
 String SENSOR = "ESP"; // BMP180, HTU21, DHT11
+String appVersion = "1.0.0";
 
 int BUILTINLED = 2;
 int RELEY = 500;
@@ -62,6 +63,11 @@ String mdns = "";
 Espiot::Espiot() {}
 
 void Espiot::init() {
+    init("1.0.0");
+}
+
+void Espiot::init(String appVer) {
+  appVersion = appVer;
   pinMode(BUILTINLED, OUTPUT);
   readFS();
 
@@ -502,7 +508,8 @@ void Espiot::onStatusGET() {
 } */
 
   JsonObject &meta = root.createNestedObject("meta");
-  meta["version"] = FIRM_VER;
+  meta["espIotVersion"] = FIRM_VER;
+  meta["appVersion"] = appVersion;
   meta["sensor"] = SENSOR;
   meta["id"] = app_id;
   meta["deviceName"] = deviceName;
