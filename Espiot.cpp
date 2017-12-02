@@ -6,7 +6,7 @@
 
 // APP
 String FIRM_VER = "1.0.2";
-String SENSOR = "ESP"; // BMP180, HTU21, DHT11
+String SENSOR = "ESP"; // BMP180, HTU21, DHT11, DS18B20
 String appVersion = "1.0.0";
 
 int BUILTINLED = 2;
@@ -19,22 +19,24 @@ int lightTreshold = 50; // 0 - dark, >100 - light
 String app_id = "";
 float adc;
 String espIp;
-String apSsid;
-String apPass;
+
+String apSsid = "Config_" + app_id;
+String apPass = "esp12345";
 int rssi;
 String ssid;
 int apStartTime;
 long startTime;
+int apTimeOut = 300000;
+boolean vccMode = false;
 
 // CONF
 char deviceName[100] = "ESP";
-char essid[40] = "iottest";
-char epwd[40] = "esptest123";
+char essid[40] = "";
+char epwd[40] = "";
 String securityToken = "";
 String defaultMODE;
 String MODE = "AUTO";
 int timeOut = 5000;
-
 
 // mqtt config
 char mqttAddress[200] = "";
@@ -62,9 +64,7 @@ String mdns = "";
 
 Espiot::Espiot() {}
 
-void Espiot::init() {
-    init("1.0.0");
-}
+void Espiot::init() { init("1.0.0"); }
 
 void Espiot::init(String appVer) {
   appVersion = appVer;
@@ -87,6 +87,18 @@ void Espiot::init(String appVer) {
 }
 
 void Espiot::loop() {
+  yield();
+
+  if (WiFi.status() != WL_CONNECTED && apStartTime + apTimeOut < millis()) {
+    Serial.print(F("\nRetray to connect to AP... "));
+    testWifi();
+  }
+
+  rssi = WiFi.RSSI();
+  yield();
+  if (vccMode == true) 
+    adc = ESP.getVcc() / 1024.00f;
+
   server.handleClient();
 
   // MQTT client
@@ -148,9 +160,7 @@ void Espiot::connectToWiFi() {
   }
 }
 
-PubSubClient Espiot::getMqClient(){
-    return mqClient;
-}
+PubSubClient Espiot::getMqClient() { return mqClient; }
 
 void Espiot::setupAP(void) {
   Serial.print(F("Setting up access point. WiFi.mode= "));
@@ -211,7 +221,6 @@ void Espiot::mqCallback(char *topic, byte *payload, unsigned int length) {
 
   DynamicJsonBuffer jsonBuffer;
   JsonObject &rootMqtt = jsonBuffer.parseObject(msg);
-
 }
 
 bool Espiot::mqReconnect() {
@@ -935,6 +944,6 @@ String Espiot::getMac() {
   return result;
 }
 
-String Espiot::getDeviceId() {
-  return app_id;
-}
+String Espiot::getDeviceId() { return app_id; }
+
+void Espiot::enableVccMeasure() { vccMode = true; }

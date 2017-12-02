@@ -23,7 +23,6 @@
 
 class Espiot {
 private:
-
   void createWebServer();
   void readFS();
   void saveConfig(JsonObject &json);
@@ -33,7 +32,7 @@ private:
   String getMac();
   void setupAP(void);
   void connectToWiFi();
-  //void mqPublish(String msg);
+  // void mqPublish(String msg);
   bool mqReconnect();
   void mqCallback(char *topic, byte *payload, unsigned int length);
 
@@ -49,20 +48,23 @@ private:
   void onStatusGET();
   void onRoot();
 
-
 public:
   char deviceName[100];
   int timeOut;
+  String SENSOR;
   String securityToken;
   String appVersion;
+  String apSsid;
+  String apPass;
   ESP8266WebServer server;
   WiFiClient client;
-  //PubSubClient mqClient;
+  // PubSubClient mqClient;
 
   PubSubClient getMqClient();
   void mqPublish(String msg);
 
   String getDeviceId();
+  void enableVccMeasure();
 
   Espiot();
   void init(String appVer);
@@ -73,7 +75,6 @@ public:
   void blink(int times);
   void blink(int times, int milisec);
   void blink(int times, int himilisec, int lowmilisec);
-
 };
 
 #endif
