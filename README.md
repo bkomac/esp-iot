@@ -1,4 +1,4 @@
-#ESP8266 IoT base lib
+# ESP8266 IoT base lib
 
 Supports:
 - REST API for configuration (saved to ESP file system)
@@ -6,7 +6,7 @@ Supports:
 - WiFi SSID setup
 - mDNS support (avahi)
 
-#CONFIG#
+### CONFIG
 ```json
 {
   "securityToken": "",
@@ -29,7 +29,7 @@ Supports:
   "deviceName": ""
 }
 ```
-#STATUS#
+### STATUS
 ```json
 {
   "id": "ESP5ccf7ff0e88",
@@ -45,5 +45,15 @@ Supports:
     "freeHeap": 27264,
     "upTimeSec": 175564
   }
+}
+```
+### SSID CONFIG
+```json
+{
+  "ssid": "myWiFi",
+  "password": "myFiWiPass",
+  "connectedTo": "MyWiFi",
+  "localIP": "192.168.1.187",
+  "softAPIP": "192.168.4.1"
 }
 ```
