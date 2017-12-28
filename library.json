@@ -5,7 +5,7 @@
 "repository":
 {
 "type": "git",
-"url": "https://github.com/bkomac"
+"url": "https://github.com/bkomac/esp-iot.git"
 },
 "frameworks": "arduino",
 "platforms": "espressif"
