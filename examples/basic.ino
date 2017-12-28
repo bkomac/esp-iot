@@ -1,5 +1,8 @@
 #include <Espiot.h>
 
+// Vcc measurement
+ADC_MODE(ADC_VCC);
+
 Espiot espiot;
 
 PubSubClient mq;
@@ -9,9 +12,18 @@ void setup() {
   Serial.println("Setup ...");
 
   delay(300);
-  espiot.init();
+
+  // init with version set
+  espiot.init("1.0.1");
+
+  // must be set above: ADC_MODE(ADC_VCC);
+  espiot.enableVccMeasure();
+
+  // set sensor description
+  espiot.SENSOR = "DS18B20";
 
   espiot.server.on("/switch", HTTP_GET, []() {
+    // using internal blink function: blink(numBlinks, interval)
     espiot.blink();
     DynamicJsonBuffer jsonBuffer;
     JsonObject &root = jsonBuffer.createObject();
@@ -27,6 +39,7 @@ void setup() {
 }
 
 void loop() {
+  // do internal stuff
   espiot.loop();
 
   delay(300);

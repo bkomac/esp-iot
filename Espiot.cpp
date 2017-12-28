@@ -5,7 +5,7 @@
 #include <FS.h>
 
 // APP
-String FIRM_VER = "1.0.2";
+String FIRM_VER = "1.0.3";
 String SENSOR = "ESP"; // BMP180, HTU21, DHT11, DS18B20
 String appVersion = "1.0.0";
 
@@ -73,15 +73,15 @@ void Espiot::init(String appVer) {
 
   Serial.print(F("**Security token: "));
   Serial.println(securityToken);
-
+  app_id = "ESP" + getMac();
   apSsid = "Config_" + app_id;
   apPass = "esp12345";
 
   startTime = millis();
-  app_id = "ESP" + getMac();
+
   Serial.print(F("**App ID: "));
   Serial.println(app_id);
-  app_id.toCharArray(deviceName, 200, 0);
+  app_id.toCharArray(deviceName, 200, app_id.length() + 2);
 
   connectToWiFi();
 }
@@ -96,7 +96,7 @@ void Espiot::loop() {
 
   rssi = WiFi.RSSI();
   yield();
-  if (vccMode == true) 
+  if (vccMode == true)
     adc = ESP.getVcc() / 1024.00f;
 
   server.handleClient();
@@ -305,16 +305,11 @@ void Espiot::readFS() {
 
           String deviceName1 = jsonConfig["deviceName"].asString();
           if (deviceName1 != "")
-            deviceName1.toCharArray(deviceName, 100, 0);
+            deviceName1.toCharArray(deviceName, 100, deviceName1.length() + 2);
 
           String timeOut1 = jsonConfig["timeOut"];
           timeOut = timeOut1.toInt();
-          String relley1 = jsonConfig["relleyPin"];
-          RELEY = relley1.toInt();
-          String gpioIn1 = jsonConfig["sensorInPin"];
-          GPIO_IN = gpioIn1.toInt();
-          String button1 = jsonConfig["buttonPin"];
-          BUTTON = button1.toInt();
+
           String builtInLed1 = jsonConfig["statusLed"];
           BUILTINLED = builtInLed1.toInt();
 
@@ -500,30 +495,13 @@ void Espiot::onStatusGET() {
   blink();
   DynamicJsonBuffer jsonBuffer;
   JsonObject &root = jsonBuffer.createObject();
-  root["rc"] = 200;
-  root["mode"] = MODE;
-  if (digitalRead(RELEY) == HIGH) {
-    root["status"] = "on";
-    digitalWrite(BUILTINLED, LOW);
-  } else {
-    root["status"] = "off";
-    digitalWrite(BUILTINLED, HIGH);
-  }
-
-  /*JsonObject &data = root.createNestedObject("data");
-  if (temp != NULL) {
-    data["temp"] = temp;
-    data["hum"] = humd;
-} */
-
+  root["id"] = app_id;
+  root["deviceName"] = deviceName;
   JsonObject &meta = root.createNestedObject("meta");
   meta["espIotVersion"] = FIRM_VER;
   meta["appVersion"] = appVersion;
   meta["sensor"] = SENSOR;
-  meta["id"] = app_id;
-  meta["deviceName"] = deviceName;
   meta["adc_vcc"] = adc;
-
   meta["ssid"] = essid;
   meta["rssi"] = rssi;
   meta["mdns"] = mdns;
@@ -590,7 +568,7 @@ void Espiot::onUpdatePOST() {
 
     case HTTP_UPDATE_NO_UPDATES:
       Serial.println("HTTP_UPDATE_NO_UPDATES");
-      root["rc"] = 400;
+
       root["msg"] = "HTTP_UPDATE_NO_UPDATES";
       root.printTo(content);
       server.send(400, "application/json", content);
@@ -598,14 +576,14 @@ void Espiot::onUpdatePOST() {
 
     case HTTP_UPDATE_OK:
       Serial.println("HTTP_UPDATE_OK");
-      root["rc"] = 200;
+
       root["msg"] = "HTTP_UPDATE_OK";
       root.printTo(content);
       server.send(200, "application/json", content);
       break;
     }
   } else {
-    root["rc"] = 401;
+
     root["msg"] = "Security token is not valid!";
     root.printTo(content);
     server.send(401, "application/json", content);
@@ -619,9 +597,7 @@ void Espiot::onConfigGET() {
 
   root["securityToken"] = "";
   root["timeOut"] = timeOut;
-  root["relleyPin"] = RELEY;
-  root["sensorInPin"] = GPIO_IN;
-  root["buttonPin"] = BUTTON;
+
   root["statusLed"] = BUILTINLED;
   root["lightTreshold"] = lightTreshold;
   root["defaultMode"] = defaultMODE;
@@ -666,18 +642,9 @@ void Espiot::onConfigPOST() {
 
     String timeOut1 = root["timeOut"];
     timeOut = timeOut1.toInt();
-    String relley1 = root["relleyPin"];
-    RELEY = relley1.toInt();
-    String gpioIn1 = root["sensorInPin"];
-    GPIO_IN = gpioIn1.toInt();
-    String button1 = root["buttonPin"];
-    BUTTON = button1.toInt();
+
     String builtInLed1 = root["statusLed"];
     BUILTINLED = builtInLed1.toInt();
-    String lightTreshold1 = root["lightTreshold"];
-    lightTreshold = lightTreshold1.toInt();
-
-    defaultMODE = root["defaultMode"].asString();
 
     String mqttAddress1 = root["mqttAddress"].asString();
     mqttAddress1.toCharArray(mqttAddress, 200, 0);
@@ -713,16 +680,14 @@ void Espiot::onConfigPOST() {
 
     String deviceName1 = root["deviceName"].asString();
     if (deviceName1 != "")
-      deviceName1.toCharArray(deviceName, 200, 0);
+      deviceName1.toCharArray(deviceName, 200, deviceName1.length() + 2);
 
     root.printTo(Serial);
 
     saveConfig(root);
-    pinMode(RELEY, OUTPUT);
-    pinMode(GPIO_IN, INPUT);
 
     Serial.println(F("\nConfiguration is saved."));
-    root["rc"] = 200;
+
     root["msg"] = "Configuration is saved.";
     root.printTo(content);
     server.sendHeader("Access-Control-Allow-Methods", "POST,GET,OPTIONS");
@@ -731,7 +696,7 @@ void Espiot::onConfigPOST() {
     server.send(200, "application/json", content);
   } else {
     Serial.println(F("\nSecurity tokent not valid!"));
-    root["rc"] = 401;
+
     root["msg"] = "Security tokent not valid!";
     root.printTo(content);
     server.sendHeader("Access-Control-Allow-Methods", "POST,GET,OPTIONS");
@@ -788,7 +753,6 @@ void Espiot::onSsidPOST() {
     Serial.println(essid);
 
     Serial.println(F("\nNew ssid is set. ESP will reconect..."));
-    root["rc"] = 200;
     root["msg"] = "New ssid is set. ESP will reconect.";
 
     String content;
@@ -808,7 +772,7 @@ void Espiot::onSsidPOST() {
     testWifi();
   } else {
     Serial.println(F("\nSecurity token not valid!"));
-    root["rc"] = 401;
+
     root["msg"] = "Security token not valid!";
 
     String content;
@@ -824,7 +788,7 @@ void Espiot::onResetDELETE() {
 
   String secToken = root["securityToken"].asString();
   if (secToken == securityToken) {
-    root["rc"] = 200;
+
     root["msg"] = "Reseting ESP config. Configuration will be erased ...";
     Serial.println(F("\nReseting ESP config. Configuration will be erased..."));
 
@@ -845,7 +809,7 @@ void Espiot::onResetDELETE() {
     ESP.reset();
     delay(5000);
   } else {
-    root["rc"] = 401;
+
     root["msg"] = "Security token not valid!";
     Serial.println(F("\nSecurity token not valid!"));
 
@@ -860,7 +824,6 @@ void Espiot::onResetGET() {
   DynamicJsonBuffer jsonBuffer;
   JsonObject &root = jsonBuffer.createObject();
 
-  root["rc"] = 200;
   root["msg"] = "Reseting ESP...";
   Serial.println(F("\nReseting ESP..."));
 
@@ -875,7 +838,7 @@ void Espiot::onResetGET() {
 // tesing for wifi connection
 bool Espiot::testWifi() {
   int c = 0;
-  Serial.println("Waiting for Wifi to connect...");
+  Serial.println("\nWaiting for Wifi to connect...");
   WiFi.mode(WIFI_AP_STA);
   WiFi.begin(essid, epwd);
   apStartTime = millis();

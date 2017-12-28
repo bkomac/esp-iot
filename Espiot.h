@@ -52,6 +52,9 @@ public:
   char deviceName[100];
   int timeOut;
   String SENSOR;
+
+
+
   String securityToken;
   String appVersion;
   String apSsid;
