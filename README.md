@@ -11,9 +11,6 @@ Supports:
 {
   "securityToken": "",
   "timeOut": 10000,
-  "relleyPin": 500,
-  "sensorInPin": 400,
-  "buttonPin": 100,
   "statusLed": 2,
   "lightTreshold": 50,
   "defaultMode": "",
@@ -35,15 +32,12 @@ Supports:
 #STATUS#
 ```json
 {
-  "rc": 200,
-  "mode": "",
-  "status": "off",
+  "id": "ESP5ccf7ff0e88",
+  "deviceName": "Temperature sensor",
   "meta": {
     "espIotVersion": "1.0.3",
     "appVersion": "1.0.1",
-    "sensor": "DS18B20",
-    "id": "ESP5ccf7ff0e88",
-    "deviceName": "",
+    "sensor": "DS18B20", 
     "adc_vcc": 3.082031,
     "ssid": "iottest",
     "rssi": -66,
