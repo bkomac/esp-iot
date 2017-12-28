@@ -6,7 +6,7 @@ Supports:
 - WiFi SSID setup
 - mDNS support (avahi)
 
-### CONFIG
+### CONFIG [GET,POST]
 ```json
 {
   "securityToken": "",
@@ -29,7 +29,7 @@ Supports:
   "deviceName": ""
 }
 ```
-### STATUS
+### STATUS [GET]
 ```json
 {
   "id": "ESP5ccf7ff0e88",
@@ -47,7 +47,7 @@ Supports:
   }
 }
 ```
-### SSID CONFIG
+### SSID CONFIG [GET,POST]
 ```json
 {
   "ssid": "myWiFi",
