@@ -14,7 +14,7 @@ Supports:
   "statusLed": 2,
   "lightTreshold": 50,
   "defaultMode": "",
-  "mqttAddress": "192.168.1.2",
+  "mqttAddress": "my.mqtt.broker.net",
   "mqttPort": 1883,
   "mqttUser": "esp",
   "mqttPassword": "******",
@@ -26,7 +26,7 @@ Supports:
   "restApiPort": 80,
   "restApiToken": "",
   "restApiPayload": "",
-  "deviceName": ""
+  "deviceName": "Temperature sensor"
 }
 ```
 ### STATUS [GET]
@@ -39,7 +39,7 @@ Supports:
     "appVersion": "1.0.1",
     "sensor": "DS18B20", 
     "adc_vcc": 3.082031,
-    "ssid": "iottest",
+    "ssid": "myWiFi",
     "rssi": -66,
     "mdns": "ESP5ccf7ff0e88",
     "freeHeap": 27264,
