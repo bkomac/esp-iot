@@ -17,6 +17,7 @@ void setup() {
   espiot.init("1.0.1");
 
   // must be set above: ADC_MODE(ADC_VCC);
+  // you can't use this feature with Sonoff switch!!!
   espiot.enableVccMeasure();
 
   // set sensor description

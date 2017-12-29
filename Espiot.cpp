@@ -161,6 +161,44 @@ void Espiot::connectToWiFi() {
   }
 }
 
+// tesing for wifi connection
+bool Espiot::testWifi() {
+  int c = 0;
+  Serial.println("\nWaiting for Wifi to connect...");
+  WiFi.mode(WIFI_AP_STA);
+  WiFi.begin(essid, epwd);
+  apStartTime = millis();
+  while (c < 20) {
+    if (WiFi.status() == WL_CONNECTED) {
+      Serial.print(F("WiFi connected to "));
+      Serial.println(WiFi.SSID());
+      Serial.print(F("IP: "));
+      IPAddress ip = WiFi.localIP();
+      Serial.println(getIP(ip));
+
+      blink(2, 30, 1000);
+      return true;
+    }
+    blink(1, 200);
+    delay(500);
+    Serial.print(F("Retrying to connect to WiFi ssid: "));
+    Serial.print(essid);
+    Serial.print(F(" status="));
+    Serial.println(WiFi.status());
+
+    c++;
+  }
+  Serial.println(F(""));
+  Serial.println(F("Connect timed out."));
+
+  blink(20, 30);
+  delay(1000);
+  // reset esp
+  // ESP.reset();
+  // delay(3000);
+  return false;
+}
+
 PubSubClient Espiot::getMqClient() { return mqClient; }
 
 void Espiot::setupAP(void) {
@@ -828,44 +866,6 @@ void Espiot::onResetGET() {
   ESP.reset();
   delay(5000);
 };
-
-// tesing for wifi connection
-bool Espiot::testWifi() {
-  int c = 0;
-  Serial.println("\nWaiting for Wifi to connect...");
-  WiFi.mode(WIFI_AP_STA);
-  WiFi.begin(essid, epwd);
-  apStartTime = millis();
-  while (c < 20) {
-    if (WiFi.status() == WL_CONNECTED) {
-      Serial.print(F("WiFi connected to "));
-      Serial.println(WiFi.SSID());
-      Serial.print(F("IP: "));
-      IPAddress ip = WiFi.localIP();
-      Serial.println(getIP(ip));
-
-      blink(2, 30, 1000);
-      return true;
-    }
-    blink(1, 200);
-    delay(500);
-    Serial.print(F("Retrying to connect to WiFi ssid: "));
-    Serial.print(essid);
-    Serial.print(F(" status="));
-    Serial.println(WiFi.status());
-
-    c++;
-  }
-  Serial.println(F(""));
-  Serial.println(F("Connect timed out."));
-
-  blink(20, 30);
-  delay(1000);
-  // reset esp
-  // ESP.reset();
-  // delay(3000);
-  return false;
-}
 
 // blink
 void Espiot::blink() { blink(1, 30, 30); }
