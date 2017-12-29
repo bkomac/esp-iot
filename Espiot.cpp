@@ -10,11 +10,6 @@ String SENSOR = "ESP"; // BMP180, HTU21, DHT11, DS18B20
 String appVersion = "1.0.0";
 
 int BUILTINLED = 2;
-int RELEY = 500;
-int GPIO_IN = 400;
-int BUTTON = 100;
-
-int lightTreshold = 50; // 0 - dark, >100 - light
 
 String app_id = "";
 float adc;
@@ -30,7 +25,7 @@ int apTimeOut = 300000;
 boolean vccMode = false;
 
 // CONF
-char deviceName[100] = "ESP";
+char deviceName[200] = "ESP";
 char essid[40] = "";
 char epwd[40] = "";
 String securityToken = "";
@@ -62,6 +57,9 @@ PubSubClient mqClient(client);
 // MDNS
 String mdns = "";
 
+DynamicJsonBuffer ssidJsonBuffer;
+DynamicJsonBuffer configJsonBuffer;
+
 Espiot::Espiot() {}
 
 void Espiot::init() { init("1.0.0"); }
@@ -90,7 +88,9 @@ void Espiot::loop() {
   yield();
 
   if (WiFi.status() != WL_CONNECTED && apStartTime + apTimeOut < millis()) {
-    Serial.print(F("\nRetray to connect to AP... "));
+    Serial.print(F("\nRetray to connect to AP... \n"));
+    Serial.print("status: " + String(WiFi.status()) + " " +
+                 String(apStartTime + apTimeOut) + " < " + String(millis()));
     testWifi();
   }
 
@@ -137,8 +137,12 @@ void Espiot::connectToWiFi() {
   ssid = WiFi.SSID();
   Serial.print(F("\nconnected to "));
   Serial.print(ssid);
-  Serial.print(F(" "));
-  Serial.println(rssi);
+  Serial.print(F(" rssi:"));
+  Serial.print(rssi);
+  Serial.print(F(" status: "));
+  Serial.print(WiFi.status());
+  Serial.print(F(" = "));
+  Serial.println(WL_CONNECTED + String("-WL_CONNECTED?"));
 
   Serial.println(" ");
   IPAddress ip = WiFi.localIP();
@@ -166,7 +170,7 @@ void Espiot::setupAP(void) {
   Serial.print(F("Setting up access point. WiFi.mode= "));
   Serial.println(WIFI_STA);
   WiFi.mode(WIFI_STA);
-  WiFi.disconnect();
+  // WiFi.disconnect();
 
   delay(100);
   int n = WiFi.scanNetworks();
@@ -293,8 +297,9 @@ void Espiot::readFS() {
         std::unique_ptr<char[]> buf(new char[size]);
 
         configFile.readBytes(buf.get(), size);
-        DynamicJsonBuffer jsonBuffer;
-        JsonObject &jsonConfig = jsonBuffer.parseObject(buf.get());
+
+        //
+        JsonObject &jsonConfig = configJsonBuffer.parseObject(buf.get());
         jsonConfig.printTo(Serial);
 
         if (jsonConfig.success()) {
@@ -304,14 +309,13 @@ void Espiot::readFS() {
           securityToken = jsonConfig["securityToken"].asString();
 
           String deviceName1 = jsonConfig["deviceName"].asString();
-          if (deviceName1 != "")
-            deviceName1.toCharArray(deviceName, 100, deviceName1.length() + 2);
-
-          String timeOut1 = jsonConfig["timeOut"];
-          timeOut = timeOut1.toInt();
+          deviceName1.toCharArray(deviceName, 200, deviceName1.length() + 2);
 
           String builtInLed1 = jsonConfig["statusLed"];
           BUILTINLED = builtInLed1.toInt();
+
+          String timeOut1 = jsonConfig["timeOut"];
+          timeOut = timeOut1.toInt();
 
           defaultMODE = jsonConfig["defaultMode"].asString();
           MODE = defaultMODE;
@@ -349,9 +353,6 @@ void Espiot::readFS() {
           String api_payload1 = jsonConfig["restApiPayload"].asString();
           api_payload1.toCharArray(api_payload, 400, 0);
 
-          String lightTreshold1 = jsonConfig["lightTreshold"];
-          lightTreshold = lightTreshold1.toInt();
-
         } else {
           Serial.println(F("-failed to load json config!"));
         }
@@ -372,8 +373,8 @@ void Espiot::readFS() {
         std::unique_ptr<char[]> buf(new char[size]);
 
         ssidFile.readBytes(buf.get(), size);
-        DynamicJsonBuffer jsonBuffer;
-        JsonObject &jsonConfig = jsonBuffer.parseObject(buf.get());
+        // DynamicJsonBuffer ssidJsonBuffer;
+        JsonObject &jsonConfig = ssidJsonBuffer.parseObject(buf.get());
 
         jsonConfig.printTo(Serial);
         if (jsonConfig.success()) {
@@ -596,11 +597,9 @@ void Espiot::onConfigGET() {
   JsonObject &root = jsonBuffer.createObject();
 
   root["securityToken"] = "";
-  root["timeOut"] = timeOut;
 
   root["statusLed"] = BUILTINLED;
-  root["lightTreshold"] = lightTreshold;
-  root["defaultMode"] = defaultMODE;
+  root["timeOut"] = timeOut;
 
   root["mqttAddress"] = mqttAddress;
   root["mqttPort"] = mqttPort;
@@ -640,11 +639,10 @@ void Espiot::onConfigPOST() {
     securityToken = root["newSecurityToken"].asString();
     root["securityToken"] = root["newSecurityToken"];
 
-    String timeOut1 = root["timeOut"];
-    timeOut = timeOut1.toInt();
-
     String builtInLed1 = root["statusLed"];
     BUILTINLED = builtInLed1.toInt();
+    String timeOut1 = root["timeOut"];
+    timeOut = timeOut1.toInt();
 
     String mqttAddress1 = root["mqttAddress"].asString();
     mqttAddress1.toCharArray(mqttAddress, 200, 0);
@@ -679,8 +677,7 @@ void Espiot::onConfigPOST() {
     api_payload1.toCharArray(api_payload, 400, 0);
 
     String deviceName1 = root["deviceName"].asString();
-    if (deviceName1 != "")
-      deviceName1.toCharArray(deviceName, 200, deviceName1.length() + 2);
+    deviceName1.toCharArray(deviceName, 200, deviceName1.length() + 2);
 
     root.printTo(Serial);
 

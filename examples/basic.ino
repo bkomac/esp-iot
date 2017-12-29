@@ -27,7 +27,6 @@ void setup() {
     espiot.blink();
     DynamicJsonBuffer jsonBuffer;
     JsonObject &root = jsonBuffer.createObject();
-    root["rc"] = 200;
 
     String content;
     root.printTo(content);
