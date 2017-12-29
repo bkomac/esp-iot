@@ -57,9 +57,6 @@ PubSubClient mqClient(client);
 // MDNS
 String mdns = "";
 
-DynamicJsonBuffer ssidJsonBuffer;
-DynamicJsonBuffer configJsonBuffer;
-
 Espiot::Espiot() {}
 
 void Espiot::init() { init("1.0.0"); }
@@ -88,8 +85,8 @@ void Espiot::loop() {
   yield();
 
   if (WiFi.status() != WL_CONNECTED && apStartTime + apTimeOut < millis()) {
-    Serial.print(F("\nRetray to connect to AP... \n"));
-    Serial.print("status: " + String(WiFi.status()) + " " +
+    Serial.print("\nRetray to connect to AP... " + String(essid));
+    Serial.print("\nstatus: " + String(WiFi.status()) + " " +
                  String(apStartTime + apTimeOut) + " < " + String(millis()));
     testWifi();
   }
@@ -298,7 +295,7 @@ void Espiot::readFS() {
 
         configFile.readBytes(buf.get(), size);
 
-        //
+        DynamicJsonBuffer configJsonBuffer;
         JsonObject &jsonConfig = configJsonBuffer.parseObject(buf.get());
         jsonConfig.printTo(Serial);
 
@@ -373,7 +370,7 @@ void Espiot::readFS() {
         std::unique_ptr<char[]> buf(new char[size]);
 
         ssidFile.readBytes(buf.get(), size);
-        // DynamicJsonBuffer ssidJsonBuffer;
+        DynamicJsonBuffer ssidJsonBuffer;
         JsonObject &jsonConfig = ssidJsonBuffer.parseObject(buf.get());
 
         jsonConfig.printTo(Serial);
