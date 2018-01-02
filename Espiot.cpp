@@ -5,17 +5,20 @@
 #include <FS.h>
 
 // APP
-String FIRM_VER = "1.0.4";
+String FIRM_VER = "1.0.5";
 String SENSOR = "ESP"; // BMP180, HTU21, DHT11, DS18B20
 String appVersion = "1.0.0";
 
 int BUILTINLED = 2;
+#ifdef BUILTINLED
+BUILTINLED = BUILTINLED;
+#endif
 
 String app_id = "";
 float adc;
 String espIp;
 
-String apSsid = "Config_" + app_id;
+String apSsid = "Config";
 String apPass = "esp12345";
 int rssi;
 String ssid;
@@ -25,7 +28,7 @@ int apTimeOut = 300000;
 boolean vccMode = false;
 
 // CONF
-char deviceName[200] = "ESP";
+String deviceName = "ESP";
 char essid[40] = "";
 char epwd[40] = "";
 String securityToken = "";
@@ -64,21 +67,23 @@ void Espiot::init() { init("1.0.0"); }
 void Espiot::init(String appVer) {
   appVersion = appVer;
   pinMode(BUILTINLED, OUTPUT);
-  readFS();
 
   Serial.print(F("**Security token: "));
   Serial.println(securityToken);
   app_id = "ESP" + getMac();
-  apSsid = "Config_" + app_id;
-  apPass = "esp12345";
+  apSsid = apSsid + "_" + app_id;
 
   startTime = millis();
 
   Serial.print(F("**App ID: "));
   Serial.println(app_id);
-  app_id.toCharArray(deviceName, 200, app_id.length() + 2);
+  //app_id.toCharArray(deviceName, 200, app_id.length());
+  deviceName = app_id;
+  // read configuration
+  readFS();
 
   connectToWiFi();
+  Serial.println("Device name: " + String(deviceName));
 }
 
 void Espiot::loop() {
@@ -343,8 +348,7 @@ void Espiot::readFS() {
           // config parameters
           securityToken = jsonConfig["securityToken"].asString();
 
-          String deviceName1 = jsonConfig["deviceName"].asString();
-          deviceName1.toCharArray(deviceName, 200, deviceName1.length() + 2);
+          deviceName = jsonConfig["deviceName"].asString();
 
           String builtInLed1 = jsonConfig["statusLed"];
           BUILTINLED = builtInLed1.toInt();
@@ -711,8 +715,7 @@ void Espiot::onConfigPOST() {
     String api_payload1 = root["restApiPayload"].asString();
     api_payload1.toCharArray(api_payload, 400, 0);
 
-    String deviceName1 = root["deviceName"].asString();
-    deviceName1.toCharArray(deviceName, 200, deviceName1.length() + 2);
+    deviceName = root["deviceName"].asString();
 
     root.printTo(Serial);
 

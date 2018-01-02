@@ -4,22 +4,19 @@
 #ifndef espiot_h
 #define espiot_h
 
-#include "Arduino.h"
+#include <Arduino.h>
 #include <FS.h>
-#include <Wire.h>
 
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <Hash.h>
 #include <PubSubClient.h>
-#include <WebSocketsServer.h>
 
 #include <ESP8266HTTPClient.h>
 #include <ESP8266httpUpdate.h>
 
 #include <ArduinoJson.h>
-#include <SPI.h>
 
 class Espiot {
 private:
@@ -49,7 +46,8 @@ private:
   void onRoot();
 
 public:
-  char deviceName[100];
+  //char deviceName[100];
+  String deviceName;
   int timeOut;
   String SENSOR;
 
