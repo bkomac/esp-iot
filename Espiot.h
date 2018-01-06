@@ -33,6 +33,9 @@ private:
   bool mqReconnect();
   void mqCallback(char *topic, byte *payload, unsigned int length);
 
+  void onWiFiGET();
+  void onWiFiOPTIONS();
+  void onWiFiPOST();
   void onResetGET();
   void onResetDELETE();
   void onSsidPOST();
@@ -46,12 +49,10 @@ private:
   void onRoot();
 
 public:
-  //char deviceName[100];
+  // char deviceName[100];
   String deviceName;
   int timeOut;
   String SENSOR;
-
-
 
   String securityToken;
   String appVersion;
@@ -63,6 +64,7 @@ public:
 
   PubSubClient getMqClient();
   void mqPublish(String msg);
+  void mqPublishSubTopic(String subTopic, String msg);
 
   String getDeviceId();
   void enableVccMeasure();

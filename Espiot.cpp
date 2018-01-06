@@ -1,5 +1,5 @@
 
-#include "Espiot.h"
+#include <Espiot.h>
 #include <Arduino.h>
 #include <ESP8266WebServer.h>
 #include <FS.h>
@@ -33,7 +33,6 @@ char essid[40] = "";
 char epwd[40] = "";
 String securityToken = "";
 String defaultMODE;
-String MODE = "AUTO";
 int timeOut = 5000;
 
 // mqtt config
@@ -77,7 +76,7 @@ void Espiot::init(String appVer) {
 
   Serial.print(F("**App ID: "));
   Serial.println(app_id);
-  //app_id.toCharArray(deviceName, 200, app_id.length());
+  // app_id.toCharArray(deviceName, 200, app_id.length());
   deviceName = app_id;
   // read configuration
   readFS();
@@ -181,7 +180,7 @@ bool Espiot::testWifi() {
       IPAddress ip = WiFi.localIP();
       Serial.println(getIP(ip));
 
-      blink(2, 30, 1000);
+      blink(3, 30, 500);
       return true;
     }
     blink(1, 200);
@@ -320,6 +319,23 @@ void Espiot::mqPublish(String msg) {
   }
 }
 
+void Espiot::mqPublishSubTopic(String msg, String subTopic) {
+
+  if (mqReconnect()) {
+
+    // mqClient.loop();
+    String completeTopic = String(mqttPublishTopic) + "/" + subTopic;
+    Serial.print(F("\nPublish message to topic '"));
+    Serial.print(completeTopic);
+    Serial.print(F("':"));
+    Serial.println(msg);
+    mqClient.publish(String(completeTopic).c_str(), msg.c_str());
+
+  } else {
+    Serial.print(F("\nPublish failed!"));
+  }
+}
+
 void Espiot::readFS() {
   // read configuration from FS json
   Serial.println(F("-mounting FS..."));
@@ -357,7 +373,6 @@ void Espiot::readFS() {
           timeOut = timeOut1.toInt();
 
           defaultMODE = jsonConfig["defaultMode"].asString();
-          MODE = defaultMODE;
 
           String mqttAddress1 = jsonConfig["mqttAddress"].asString();
           mqttAddress1.toCharArray(mqttAddress, 200, 0);
@@ -471,6 +486,12 @@ void Espiot::createWebServer() {
 
   server.on("/", [this]() { onRoot(); });
 
+  server.on("/wifi", HTTP_GET, [this]() { onWiFiGET(); });
+
+  server.on("/wifi", HTTP_OPTIONS, [this]() { onWiFiOPTIONS(); });
+
+  server.on("/wifi", HTTP_POST, [this]() { onWiFiPOST(); });
+
   server.on("/status", HTTP_GET, [this]() { onStatusGET(); });
 
   server.on("/update", HTTP_GET, [this]() { onUpdateGET(); });
@@ -508,6 +529,8 @@ void Espiot::onRoot() {
   content += "<p>ADC: " + String(adc) + "</p>";
   content += "<br><p><b>REST API: </b>";
 
+  content += "<br>GET: <a href='http://" + espIp + "/wifi'>http://" + espIp +
+             "/wifi </a>";
   content += "<br>GET: <a href='http://" + espIp + "/status'>http://" + espIp +
              "/status </a>";
   content += "<br>GET: <a href='http://" + espIp + "/update'>http://" + espIp +
@@ -529,6 +552,60 @@ void Espiot::onRoot() {
 
   content += "</html>";
   server.send(200, "text/html", content);
+};
+
+void Espiot::onWiFiGET() {
+  blink();
+  String content;
+  content = "<!DOCTYPE HTML>\r\n<html>";
+  content +=
+      "<link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' integrity='sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u' crossorigin='anonymous'>";
+  content += "<center><div style='width:400px;'>";
+  content += "<div class='card w-50'><div class = 'card-body'><h4 class = 'card-title'> Welcome to ESP8266</h4><h6 class = 'card-subtitle mb-2 text-muted'>Device id: " + getDeviceId();
+  content += "</h6><p class = 'card-text'><div class='form-group'><form method='post' action='setting'><label for='usrName'>SSID: </label><input id='usrName' name='ssid' length=32 class='form-control'> <label for='pwd'>PASSWORD: </label><input id='pwd' name='pass' length=64 class='form-control'></div> <input value='Save and connect' type='submit' class='btn btn-primary'></form>";
+  content += "</p></div></div></center></html>";
+
+  server.send(200, "text/html", content);
+};
+
+void Espiot::onWiFiOPTIONS() {
+  blink();
+
+  // server.sendHeader("Access-Control-Max-Age", "10000");
+  server.sendHeader("Access-Control-Allow-Methods", "POST,GET,OPTIONS");
+  server.sendHeader("Access-Control-Allow-Headers",
+                    "Origin, X-Requested-With, Content-Type, Accept");
+  server.send(200, "text/plain", "");
+};
+
+void Espiot::onWiFiPOST() {
+  blink();
+  StaticJsonBuffer<200> jsonBuffer;
+  JsonObject &root = jsonBuffer.parseObject(server.arg("plain"));
+
+  String qsid = root["ssid"];
+  String qpass = root["pass"];
+  Serial.println("");
+  root.printTo(Serial);
+  Serial.println("");
+  String content;
+  int statusCode;
+  if (qsid.length() > 0 && qpass.length() > 0) {
+
+    Serial.print("new ssid: ");
+    Serial.println(qsid);
+    Serial.print("new pass: ");
+    Serial.println(qpass);
+    Serial.println("");
+
+    content = "<h2>Configuration saved! Connecting ...";
+    statusCode = 200;
+  } else {
+    content = "<h2>Eror: Not found 404</h2>";
+    statusCode = 404;
+    Serial.println("Sending 404");
+  }
+  server.send(statusCode, "text/html", content);
 };
 
 void Espiot::onStatusGET() {
