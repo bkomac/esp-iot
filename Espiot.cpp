@@ -5,7 +5,7 @@
 #include <FS.h>
 
 // APP
-String FIRM_VER = "1.0.5";
+String FIRM_VER = "1.0.7";
 String SENSOR = "ESP"; // BMP180, HTU21, DHT11, DS18B20
 String appVersion = "1.0.0";
 
@@ -580,7 +580,7 @@ void Espiot::onWiFiOPTIONS() {
 
 void Espiot::onWiFiPOST() {
   blink();
-  StaticJsonBuffer<200> jsonBuffer;
+  DynamicJsonBuffer jsonBuffer;
   JsonObject &root = jsonBuffer.parseObject(server.arg("plain"));
 
   String qsid = root["ssid"];
@@ -588,6 +588,7 @@ void Espiot::onWiFiPOST() {
   Serial.println("");
   root.printTo(Serial);
   Serial.println("");
+
   String content;
   int statusCode;
   if (qsid.length() > 0 && qpass.length() > 0) {
@@ -597,6 +598,21 @@ void Espiot::onWiFiPOST() {
     Serial.print("new pass: ");
     Serial.println(qpass);
     Serial.println("");
+
+    Serial.println(F("\nNew ssid is set. ESP will reconect..."));
+
+    saveSsid(root);
+
+    delay(500);
+    ESP.eraseConfig();
+    delay(1000);
+    WiFi.disconnect();
+    delay(1000);
+    WiFi.mode(WIFI_STA);
+    delay(1000);
+    WiFi.begin(essid, epwd);
+    delay(1000);
+    testWifi();
 
     content = "<h2>Configuration saved! Connecting ...";
     statusCode = 200;
