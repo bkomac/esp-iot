@@ -49,10 +49,11 @@ private:
   void onRoot();
 
 public:
-  // char deviceName[100];
   String deviceName;
   int timeOut;
+  int lightThreshold;
   String SENSOR;
+  String defaultMODE;
 
   String securityToken;
   String appVersion;

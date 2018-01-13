@@ -5,7 +5,7 @@
 #include <FS.h>
 
 // APP
-String FIRM_VER = "1.0.7";
+String FIRM_VER = "1.0.9";
 String SENSOR = "ESP"; // BMP180, HTU21, DHT11, DS18B20
 String appVersion = "1.0.0";
 
@@ -17,6 +17,7 @@ BUILTINLED = BUILTINLED;
 String app_id = "";
 float adc;
 String espIp;
+int lightThreshold = 50;
 
 String apSsid = "Config";
 String apPass = "esp12345";
@@ -32,7 +33,7 @@ String deviceName = "ESP";
 char essid[40] = "";
 char epwd[40] = "";
 String securityToken = "";
-String defaultMODE;
+String defaultMODE = "AUTO";
 int timeOut = 5000;
 
 // mqtt config
@@ -369,6 +370,9 @@ void Espiot::readFS() {
           String builtInLed1 = jsonConfig["statusLed"];
           BUILTINLED = builtInLed1.toInt();
 
+          String lightThreshold1 = jsonConfig["lightThreshold"];
+          lightThreshold = lightThreshold1.toInt();
+
           String timeOut1 = jsonConfig["timeOut"];
           timeOut = timeOut1.toInt();
 
@@ -562,7 +566,7 @@ void Espiot::onWiFiGET() {
       "<link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' integrity='sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u' crossorigin='anonymous'>";
   content += "<center><div style='width:400px;'>";
   content += "<div class='card w-50'><div class = 'card-body'><h4 class = 'card-title'> Welcome to ESP8266</h4><h6 class = 'card-subtitle mb-2 text-muted'>Device id: " + getDeviceId();
-  content += "</h6><p class = 'card-text'><div class='form-group'><form method='post' action='setting'><label for='usrName'>SSID: </label><input id='usrName' name='ssid' length=32 class='form-control'> <label for='pwd'>PASSWORD: </label><input id='pwd' name='pass' length=64 class='form-control'></div> <input value='Save and connect' type='submit' class='btn btn-primary'></form>";
+  content += "</h6><p class = 'card-text'><div class='form-group'><form method='post' action='setting'><label for='usrName'>SSID: </label><input id='usrName' name='ssid' length=32 class='form-control'> <label for='pwd'>PASSWORD: </label><input id='pwd' name='pass' type='password' length=64 class='form-control'></div> <input value='Save and connect' type='submit' class='btn btn-primary'></form>";
   content += "</p></div></div></center></html>";
 
   server.send(200, "text/html", content);
@@ -585,7 +589,7 @@ void Espiot::onWiFiPOST() {
 
   String qsid = root["ssid"];
   String qpass = root["pass"];
-  Serial.println("");
+  Serial.println("Saveing SSID and PASS...");
   root.printTo(Serial);
   Serial.println("");
 
@@ -731,6 +735,8 @@ void Espiot::onConfigGET() {
   root["securityToken"] = "";
 
   root["statusLed"] = BUILTINLED;
+  root["lightThreshold"] = lightThreshold;
+
   root["timeOut"] = timeOut;
 
   root["mqttAddress"] = mqttAddress;
@@ -773,6 +779,10 @@ void Espiot::onConfigPOST() {
 
     String builtInLed1 = root["statusLed"];
     BUILTINLED = builtInLed1.toInt();
+
+    String lightThreshold1 = root["lightThreshold"];
+    lightThreshold = lightThreshold1.toInt();
+
     String timeOut1 = root["timeOut"];
     timeOut = timeOut1.toInt();
 
