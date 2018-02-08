@@ -38,6 +38,7 @@ private:
   void onWiFiPOST();
   void onResetGET();
   void onResetDELETE();
+  void onSettingPOST();
   void onSsidPOST();
   void onSsidGET();
   void onConfigOPTIONS();
@@ -66,6 +67,7 @@ public:
   PubSubClient getMqClient();
   void mqPublish(String msg);
   void mqPublishSubTopic(String subTopic, String msg);
+  String sendRequest(String data);
 
   String getDeviceId();
   void enableVccMeasure();
