@@ -55,6 +55,7 @@ public:
   int lightThreshold;
   String SENSOR;
   String defaultMODE;
+  float adc;
 
   String securityToken;
   String appVersion;

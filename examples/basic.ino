@@ -29,6 +29,9 @@ void setup() {
     DynamicJsonBuffer jsonBuffer;
     JsonObject &root = jsonBuffer.createObject();
 
+    root['id'] = espiot.getDeviceId();
+    root["adc"] = espiot.adc;
+
     String content;
     root.printTo(content);
     espiot.server.send(200, "application/json", content);
@@ -39,6 +42,22 @@ void setup() {
 }
 
 void loop() {
+
+  // Send mqtt msg. Topic is equal to deviceId.
+  DynamicJsonBuffer jsonBuffer;
+  JsonObject &root = jsonBuffer.createObject();
+
+  root['id'] = espiot.getDeviceId();
+  root["adc"] = espiot.adc;
+
+  String content;
+  root.printTo(content);
+
+  espiot.mqPublish(content);
+
+  // you can send mqtt msg to subTopic
+  espiot.mqPublishSubTopic("subtopic", content);
+
   // do internal stuff
   espiot.loop();
 

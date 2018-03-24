@@ -5,7 +5,7 @@
 #include <FS.h>
 
 // APP
-String FIRM_VER = "1.1.1";
+String FIRM_VER = "1.1.4";
 String SENSOR = "ESP"; // BMP180, HTU21, DHT11, DS18B20
 String appVersion = "1.0.0";
 
@@ -269,7 +269,10 @@ void Espiot::mqCallback(char *topic, byte *payload, unsigned int length) {
 
 bool Espiot::mqReconnect() {
   yield();
-  if (!mqClient.connected() && strlen(mqttAddress) > 0) {
+  if (mqClient.connected())
+    return true;
+
+  if (strlen(mqttAddress) > 0) {
     Serial.print(F("\nAttempting MQTT connection... "));
     Serial.print(mqttAddress);
     Serial.print(F(":"));
@@ -293,13 +296,20 @@ bool Espiot::mqReconnect() {
         mqClient.subscribe(String(mqttSuscribeTopic).c_str());
         Serial.print(F("\nSuscribed to toppic: "));
         Serial.println(mqttSuscribeTopic);
-      }
+    }else{
+        Serial.print(F("\nFailed to suscribe! Suscribe topic is not set!"));
+    }
 
     } else {
       Serial.print(F("\nFailed to connect! Client state: "));
       Serial.println(mqClient.state());
+      blink(3,40);
     }
-  }
+   }else{
+        Serial.print(F("\nNot connecting to MQTT because MQTT address is not set."));
+        blink(3,40);
+        return false;
+   }
   return mqClient.connected();
 }
 
@@ -528,7 +538,7 @@ void Espiot::onRoot() {
   String content;
 
   content = "<!DOCTYPE HTML>\r\n<html>";
-  content += "<h1><u>ESP web server</u></h1>";
+  content += "<h1><u>ESP REST API</u></h1>";
   content += "<p>IP: " + espIp + "</p>";
   content += "<p>MAC/AppId: " + app_id + "</p>";
   content += "<p>Version: " + FIRM_VER + "</p>";
@@ -547,9 +557,9 @@ void Espiot::onRoot() {
              "/config </a>";
   content += "<br>Device configuration update POST: <a href='http://" + espIp + "/config'>http://" + espIp +
              "/config </a>";
-  content += "Set up WiFi connection (payoad sample)<br>GET: <a href='http://" + espIp + "/ssid'>http://" + espIp +
+  content += "<br>Set up WiFi connection (payoad sample) GET: <a href='http://" + espIp + "/ssid'>http://" + espIp +
              "/ssid </a>";
-  content += "<brSet up WiFi connection update>POST: <a href='http://" + espIp + "/ssid'>http://" + espIp +
+  content += "<br>Set up WiFi connection update POST: <a href='http://" + espIp + "/ssid'>http://" + espIp +
              "/ssid </a>";
   content += "<br>Reboot device (reset) GET: <a href='http://" + espIp + "/reset'>http://" + espIp +
              "/reset </a>";
