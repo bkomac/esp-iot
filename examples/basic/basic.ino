@@ -13,11 +13,13 @@ void setup() {
 
   delay(300);
 
+  // AP password. Must be > 8 characters.
+  espiot.apPass = "xx12345678";
   // init with version set
   espiot.init("1.0.1");
 
   // must be set above: ADC_MODE(ADC_VCC);
-  // you can't use this feature with Sonoff switch!!!
+  // you can't use this feature with Sonoff switch or ESP8266-1 !!!
   espiot.enableVccMeasure();
 
   // set sensor description
@@ -43,7 +45,8 @@ void setup() {
 
 void loop() {
 
-  // Send mqtt msg. Topic is equal to deviceId.
+  // Send mqtt msg. Topic is equal to deviceId
+  // or can be set on /config REST API.
   DynamicJsonBuffer jsonBuffer;
   JsonObject &root = jsonBuffer.createObject();
 
@@ -56,7 +59,7 @@ void loop() {
   espiot.mqPublish(content);
 
   // you can send mqtt msg to subTopic
-  espiot.mqPublishSubTopic("subtopic", content);
+  espiot.mqPublishSubTopic(content, "subtopic");
 
   // do internal stuff
   espiot.loop();

@@ -5,7 +5,7 @@
 #include <FS.h>
 
 // APP
-String FIRM_VER = "1.1.4";
+String FIRM_VER = "1.1.8";
 String SENSOR = "ESP"; // BMP180, HTU21, DHT11, DS18B20
 String appVersion = "1.0.0";
 
@@ -32,6 +32,9 @@ boolean vccMode = false;
 String deviceName = "ESP";
 char essid[40] = "";
 char epwd[40] = "";
+String wiFiSsid = "";
+String wiFiPwd = "";
+
 String securityToken = "";
 String defaultMODE = "AUTO";
 int timeOut = 5000;
@@ -82,6 +85,12 @@ void Espiot::init(String appVer) {
   // read configuration
   readFS();
 
+  if(wiFiSsid != "")
+   wiFiSsid.toCharArray(essid, 40);
+
+   if(wiFiPwd != "")
+    wiFiPwd.toCharArray(epwd, 40);
+
   connectToWiFi();
   Serial.println("Device name: " + String(deviceName));
 }
@@ -106,6 +115,8 @@ void Espiot::loop() {
   // MQTT client
   if (String(mqttSuscribeTopic) != "")
     mqClient.loop();
+
+    mqClient.loop();
 }
 
 void Espiot::connectToWiFi() {
@@ -117,6 +128,8 @@ void Espiot::connectToWiFi() {
   if (String(essid) != "" && String(essid) != "nan") {
     Serial.print("SID found. Trying to connect to: ");
     Serial.print(essid);
+    Serial.print(":");
+    Serial.print(epwd);
     Serial.println("");
     WiFi.begin(essid, epwd);
     delay(100);
@@ -207,7 +220,7 @@ bool Espiot::testWifi() {
 
 PubSubClient Espiot::getMqClient() { return mqClient; }
 
-void Espiot::setupAP(void) {
+void Espiot::setupAP() {
   Serial.print(F("Setting up access point. WiFi.mode= "));
   Serial.println(WIFI_STA);
   WiFi.mode(WIFI_STA);
@@ -247,7 +260,7 @@ void Espiot::setupAP(void) {
   apStartTime = millis();
   Serial.println(apip);
   espIp = String(apip);
-  blink(5, 100);
+  blink(5, 10);
 }
 
 // MQTT
@@ -261,7 +274,7 @@ void Espiot::mqCallback(char *topic, byte *payload, unsigned int length) {
     msg = msg + (char)payload[i];
   }
   Serial.println();
-  blink(3, 50);
+  blink(3, 20);
 
   DynamicJsonBuffer jsonBuffer;
   JsonObject &rootMqtt = jsonBuffer.parseObject(msg);
@@ -284,6 +297,7 @@ bool Espiot::mqReconnect() {
     Serial.print(F(", Sub: "));
     Serial.print(mqttSuscribeTopic);
 
+    testWifi();
     yield();
     // Attempt to connect
     if (mqClient.connect(app_id.c_str(), mqttUser, mqttPassword)) {
@@ -303,17 +317,17 @@ bool Espiot::mqReconnect() {
     } else {
       Serial.print(F("\nFailed to connect! Client state: "));
       Serial.println(mqClient.state());
-      blink(3,40);
+      blink(3,20);
     }
    }else{
         Serial.print(F("\nNot connecting to MQTT because MQTT address is not set."));
-        blink(3,40);
+        blink(3,20);
         return false;
    }
   return mqClient.connected();
 }
 
-void Espiot::mqPublish(String msg) {
+bool Espiot::mqPublish(String msg) {
 
   if (mqReconnect()) {
 
@@ -324,13 +338,14 @@ void Espiot::mqPublish(String msg) {
     Serial.print(F("':"));
     Serial.println(msg);
     mqClient.publish(String(mqttPublishTopic).c_str(), msg.c_str());
-
+    return true;
   } else {
     Serial.print(F("\nPublish failed! Not connected!"));
+    return false;
   }
 }
 
-void Espiot::mqPublishSubTopic(String msg, String subTopic) {
+bool Espiot::mqPublishSubTopic(String msg, String subTopic) {
 
   if (mqReconnect()) {
 
@@ -341,9 +356,11 @@ void Espiot::mqPublishSubTopic(String msg, String subTopic) {
     Serial.print(F("':"));
     Serial.println(msg);
     mqClient.publish(String(completeTopic).c_str(), msg.c_str());
+    return true;
 
   } else {
     Serial.print(F("\nPublish failed!"));
+    return false;
   }
 }
 

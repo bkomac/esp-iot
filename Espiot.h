@@ -24,10 +24,10 @@ private:
   void readFS();
   void saveConfig(JsonObject &json);
   void saveSsid(JsonObject &json);
-  bool testWifi();
+
   String getIP(IPAddress ip);
   String getMac();
-  void setupAP(void);
+
   void connectToWiFi();
   // void mqPublish(String msg);
   bool mqReconnect();
@@ -57,21 +57,29 @@ public:
   String defaultMODE;
   float adc;
 
+  String wiFiSsid;
+  String wiFiPwd;
+
   String securityToken;
   String appVersion;
+
+  //ESP access point credensials
   String apSsid;
   String apPass;
+
   ESP8266WebServer server;
   WiFiClient client;
   // PubSubClient mqClient;
 
   PubSubClient getMqClient();
-  void mqPublish(String msg);
-  void mqPublishSubTopic(String subTopic, String msg);
+  bool mqPublish(String msg);
+  bool mqPublishSubTopic(String msg, String subTopic);
   String sendRequest(String data);
 
   String getDeviceId();
   void enableVccMeasure();
+  bool testWifi();
+  void setupAP();
 
   Espiot();
   void init(String appVer);
