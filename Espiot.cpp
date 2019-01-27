@@ -5,7 +5,7 @@
 #include <FS.h>
 
 // APP
-String FIRM_VER = "1.1.8";
+String FIRM_VER = "1.1.9";
 String SENSOR = "ESP"; // BMP180, HTU21, DHT11, DS18B20
 String appVersion = "1.0.0";
 
@@ -27,6 +27,7 @@ int apStartTime;
 long startTime;
 int apTimeOut = 300000;
 boolean vccMode = false;
+int heartBeatTime = millis();
 
 // CONF
 String deviceName = "ESP";
@@ -116,7 +117,11 @@ void Espiot::loop() {
   if (String(mqttSuscribeTopic) != "")
     mqClient.loop();
 
-    mqClient.loop();
+  if(heartBeatTime + 10000 < millis()){
+      heartBeat();
+      heartBeatTime = millis();
+  }
+
 }
 
 void Espiot::connectToWiFi() {
@@ -126,7 +131,7 @@ void Espiot::connectToWiFi() {
   WiFi.setAutoReconnect(true);
 
   if (String(essid) != "" && String(essid) != "nan") {
-    Serial.print("SID found. Trying to connect to: ");
+    Serial.print("SSID found. Trying to connect to: ");
     Serial.print(essid);
     Serial.print(":");
     Serial.print(epwd);
@@ -148,35 +153,38 @@ void Espiot::connectToWiFi() {
       mdns = app_id.c_str();
       Serial.println("mDNS address: http://"+mdns+".local");
     }
+    ssid = WiFi.SSID();
+    Serial.print(F("\nconnected to "));
+    Serial.print(ssid);
+    Serial.print(F(" rssi:"));
+    Serial.print(rssi);
+    Serial.print(F(" status: "));
+    Serial.print(WiFi.status());
+    Serial.print(F(" = "));
+    Serial.println(WL_CONNECTED + String("-WL_CONNECTED?"));
+
+    Serial.println(" ");
+    IPAddress ip = WiFi.localIP();
+    espIp = getIP(ip);
+    Serial.print(F("AP local ip: "));
+    Serial.println(espIp);
   }
 
-  ssid = WiFi.SSID();
-  Serial.print(F("\nconnected to "));
-  Serial.print(ssid);
-  Serial.print(F(" rssi:"));
-  Serial.print(rssi);
-  Serial.print(F(" status: "));
-  Serial.print(WiFi.status());
-  Serial.print(F(" = "));
-  Serial.println(WL_CONNECTED + String("-WL_CONNECTED?"));
 
-  Serial.println(" ");
-  IPAddress ip = WiFi.localIP();
-  espIp = getIP(ip);
-  Serial.print(F("local ip: "));
-  Serial.println(espIp);
   yield();
   createWebServer();
 
   // MQTT
   if (String(mqttAddress) != "") {
-    Serial.print(F("Seting mqtt server and callback... "));
+    Serial.println(F("Seting mqtt server and callback... "));
     mqClient.setServer(mqttAddress, mqttPort);
     /*mqClient.setCallback(
         [this](char *topic, byte *payload, unsigned int length) {
           this->mqCallback(topic, payload, length);
       }); */
     mqReconnect();
+  }else{
+    Serial.println(F("No mqtt address."));
   }
 }
 
@@ -184,6 +192,18 @@ void Espiot::connectToWiFi() {
 bool Espiot::testWifi() {
   int c = 0;
   Serial.println("\nWaiting for Wifi to connect...");
+
+  if (WiFi.status() == WL_CONNECTED)
+    return true;
+
+  if(String(essid) == ""){
+    Serial.println("\nNo SSID configured!");
+    return false;
+  }
+
+  if(checkNetwork(String(essid)) == false)
+    return false;
+
   WiFi.mode(WIFI_AP_STA);
   WiFi.begin(essid, epwd);
   apStartTime = millis();
@@ -200,7 +220,7 @@ bool Espiot::testWifi() {
     }
     blink(1, 200);
     delay(500);
-    Serial.print(F("Retrying to connect to WiFi ssid: "));
+    Serial.print(String(c) + F(" Retrying to connect to WiFi ssid: "));
     Serial.print(essid);
     Serial.print(F(" status="));
     Serial.println(WiFi.status());
@@ -227,11 +247,28 @@ void Espiot::setupAP() {
   // WiFi.disconnect();
 
   delay(100);
+
+  WiFi.softAP(apSsid.c_str(), apPass.c_str());
+  Serial.print("SoftAP ready. AP SID: " + String(apSsid) + " pass: " + String(apPass));
+
+  IPAddress apip = WiFi.softAPIP();
+  Serial.print(F(", AP IP address: "));
+
+  String softAp = getIP(apip);
+  apStartTime = millis();
+  Serial.println(apip);
+  espIp = String(apip);
+  blink(5, 10);
+}
+
+bool Espiot::checkNetwork(String ssidName){
+  delay(100);
   int n = WiFi.scanNetworks();
   Serial.println(F("Scanning network done."));
-  if (n == 0)
+  if (n == 0){
     Serial.println(F("No networks found."));
-  else {
+
+  } else {
     Serial.print(n);
     Serial.println(F(" networks found"));
     Serial.println(F("---------------------------------"));
@@ -245,22 +282,14 @@ void Espiot::setupAP() {
       Serial.print(F(")"));
       Serial.println((WiFi.encryptionType(i) == ENC_TYPE_NONE) ? " " : "*");
       delay(10);
+      if(String(WiFi.SSID(i)) == ssidName)
+        return true;
     }
   }
-  Serial.println("");
-  delay(100);
-
-  WiFi.softAP(apSsid.c_str(), apPass.c_str());
-  Serial.print("SoftAP ready. AP SID: " + String(apSsid) + " pass: " + String(apPass));
-
-  IPAddress apip = WiFi.softAPIP();
-  Serial.print(F(", AP IP address: "));
-
-  String softAp = getIP(apip);
-  apStartTime = millis();
-  Serial.println(apip);
-  espIp = String(apip);
-  blink(5, 10);
+  Serial.print(F("\nNetwork "));
+  Serial.print(ssidName);
+  Serial.println(F(" not found!"));
+  return false;
 }
 
 // MQTT
@@ -292,7 +321,9 @@ bool Espiot::mqReconnect() {
     Serial.print(mqttPort);
     Serial.print(F("@"));
     Serial.print(mqttUser);
-    Serial.print(F(" Pub: "));
+    Serial.print(F(":"));
+    Serial.print(mqttPassword);
+    Serial.print(F("// Pub: "));
     Serial.print(mqttPublishTopic);
     Serial.print(F(", Sub: "));
     Serial.print(mqttSuscribeTopic);
@@ -302,7 +333,7 @@ bool Espiot::mqReconnect() {
     // Attempt to connect
     if (mqClient.connect(app_id.c_str(), mqttUser, mqttPassword)) {
       yield();
-      Serial.print(F("\nConnected with cid: "));
+      Serial.print(F("\nConnected to MQTT with cid: "));
       Serial.println(app_id);
 
       // suscribe
@@ -310,9 +341,7 @@ bool Espiot::mqReconnect() {
         mqClient.subscribe(String(mqttSuscribeTopic).c_str());
         Serial.print(F("\nSuscribed to toppic: "));
         Serial.println(mqttSuscribeTopic);
-    }else{
-        Serial.print(F("\nFailed to suscribe! Suscribe topic is not set!"));
-    }
+      }
 
     } else {
       Serial.print(F("\nFailed to connect! Client state: "));
@@ -327,6 +356,34 @@ bool Espiot::mqReconnect() {
   return mqClient.connected();
 }
 
+void Espiot::heartBeat(){
+ blink();
+  DynamicJsonBuffer jsonBuffer;
+  JsonObject &root = jsonBuffer.createObject();
+
+  root["id"] = app_id;
+  root["deviceName"] = deviceName;
+  root["deviceIP"] = WiFi.localIP().toString();
+  //root["mdns"] = mdns;
+  JsonObject &meta = root.createNestedObject("meta");
+  meta["espIotVersion"] = FIRM_VER;
+  meta["appVersion"] = appVersion;
+  // meta["sensor"] = SENSOR;
+  // meta["adc_vcc"] = adc;
+  // meta["ssid"] = WiFi.SSID();
+  // meta["softAPIP"] = WiFi.softAPIP().toString();
+  // meta["mqttAddress"] = mqttAddress;
+  // meta["mqttPublishTopic"] = mqttPublishTopic;
+  // meta["mqttSuscribeTopic"] = mqttSuscribeTopic;
+  // meta["rssi"] = rssi;
+  // meta["freeHeap"] = ESP.getFreeHeap();
+  // meta["upTimeSec"] = (millis() - startTime) / 1000;
+
+  String content;
+  root.printTo(content);
+  mqPublish(content);
+}
+
 bool Espiot::mqPublish(String msg) {
 
   if (mqReconnect()) {
@@ -334,7 +391,7 @@ bool Espiot::mqPublish(String msg) {
     // mqClient.loop();
 
     Serial.print(F("\nPublish message to topic '"));
-    Serial.print(mqttPublishTopic);
+    Serial.print(String(mqttPublishTopic).c_str());
     Serial.print(F("':"));
     Serial.println(msg);
     mqClient.publish(String(mqttPublishTopic).c_str(), msg.c_str());
@@ -366,16 +423,22 @@ bool Espiot::mqPublishSubTopic(String msg, String subTopic) {
 
 void Espiot::readFS() {
   // read configuration from FS json
-  Serial.println(F("-mounting FS..."));
+  Serial.println(F("- mounting FS..."));
+  yield();
+  boolean spiffsStatus = SPIFFS.begin();
+  yield();
+  if (spiffsStatus) {
+    Serial.println(F("- mounted file system"));
+    FSInfo fs_info;
+    SPIFFS.info(fs_info);
+    printf("SPIFFS: %lu of %lu bytes used.\n", fs_info.usedBytes, fs_info.totalBytes);
 
-  if (SPIFFS.begin()) {
-    Serial.println(F("-mounted file system"));
     if (SPIFFS.exists("/config.json")) {
       // file exists, reading and loading
-      Serial.println(F("-reading config.json file"));
+      Serial.println(F("- reading config.json file"));
       File configFile = SPIFFS.open("/config.json", "r");
       if (configFile) {
-        Serial.println(F("-opened config.json file"));
+        Serial.println(F("- opened config.json file"));
         size_t size = configFile.size();
         // Allocate a buffer to store contents of the file.
         std::unique_ptr<char[]> buf(new char[size]);
@@ -439,7 +502,7 @@ void Espiot::readFS() {
           api_payload1.toCharArray(api_payload, 400, 0);
 
         } else {
-          Serial.println(F("-failed to load json config!"));
+          Serial.println(F("- failed to load json config!"));
         }
       }
     } else {
@@ -449,10 +512,10 @@ void Espiot::readFS() {
     // ssid.json
     if (SPIFFS.exists("/ssid.json")) {
       // file exists, reading and loading
-      Serial.println(F("-reading ssid.json file"));
+      Serial.println(F("- reading ssid.json file"));
       File ssidFile = SPIFFS.open("/ssid.json", "r");
       if (ssidFile) {
-        Serial.println(F("-opened ssid file"));
+        Serial.println(F("- opened ssid file"));
         size_t size = ssidFile.size();
         // Allocate a buffer to store contents of the file.
         std::unique_ptr<char[]> buf(new char[size]);
@@ -479,7 +542,7 @@ void Espiot::readFS() {
       Serial.println(F("ssid.json file doesn't exist yet!"));
     }
   } else {
-    Serial.println(F("failed to mount FS"));
+    Serial.println(F("\nfailed to mount FS"));
     blink(10, 50, 20);
   }
   // end read

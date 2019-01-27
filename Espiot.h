@@ -4,6 +4,10 @@
 #ifndef espiot_h
 #define espiot_h
 
+#include <WString.h>
+#include <Base64.h>
+#include <ESP8266HTTPClient.h>
+
 #include <Arduino.h>
 #include <FS.h>
 
@@ -13,7 +17,7 @@
 #include <Hash.h>
 #include <PubSubClient.h>
 
-#include <ESP8266HTTPClient.h>
+
 #include <ESP8266httpUpdate.h>
 
 #include <ArduinoJson.h>
@@ -32,6 +36,8 @@ private:
   // void mqPublish(String msg);
   bool mqReconnect();
   void mqCallback(char *topic, byte *payload, unsigned int length);
+  void heartBeat();
+  bool checkNetwork(String ssidName);
 
   void onWiFiGET();
   void onWiFiOPTIONS();
